@@ -97,7 +97,6 @@ let buildResnet(graph:TFGraph,weights_path:string) =
         |> make_batch_norm("bn_conv1") 
         |> graph.Relu
         |> fun x -> graph.MaxPool(x,[|1L;3L;3L;1L|],[|1L;2L;2L;1L|],padding="SAME",data_format="NHWC")
-        //|> build_stage(1,"abc")
         |> build_stage(2,"abc")
         |> build_stage(3,"abcd")
         |> build_stage(4,"abcdef")
