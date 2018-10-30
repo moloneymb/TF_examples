@@ -103,7 +103,6 @@ let buildResnet(graph:TFGraph,weights_path:string) =
         |> build_stage(4,"abcdef")
         |> build_stage(5,"abc")
         |> fun x -> graph.ReduceMean(x,axis=([1;2] |> toAxis)) 
-        // TODO might need to flatten here?
         |> fun x -> graph.MatMul(x,getWeights("fc1000/fc1000_W:0"))
         |> fun x -> graph.Add(x, getWeights("fc1000/fc1000_b:0"))
         |> fun x -> graph.Softmax(x)
