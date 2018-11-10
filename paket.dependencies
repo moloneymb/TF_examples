@@ -3,6 +3,7 @@ source https://www.nuget.org/api/v2
 nuget FSharp.Core
 nuget TensorFlowSharp
 nuget HDF.PInvoke.NETStandard
+nuget System.Drawing.Common
 http https://github.com/fchollet/deep-learning-models/releases/download/v0.2/resnet50_weights_tf_dim_ordering_tf_kernels.h5
 
 

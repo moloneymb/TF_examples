@@ -17,7 +17,7 @@ let buildResnet(graph:TFGraph,weights_path:string) =
                     nameCount.[name] <- nameCount.[name] + 1
                     sprintf "%s_%i" name nameCount.[name] 
                 else nameCount.Add((name,1)); name
-            graph.WithScope(name)
+            graph.WithScope(namePrime)
 
 
     use h5 = HDF5.HDF5.OpenRead(weights_path) 

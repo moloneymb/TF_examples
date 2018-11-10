@@ -1,3 +1,4 @@
+open System.Windows.Forms
 #r "netstandard"
 #I "bin/Debug/netstandard2.0"
 #r "HDF.PInvoke.dll"
