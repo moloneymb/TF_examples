@@ -1,4 +1,4 @@
-open System.Windows.Forms
+#r "FSI.exe"
 #r "netstandard"
 #I "bin/Debug/netstandard2.0"
 #r "HDF.PInvoke.dll"
@@ -8,19 +8,19 @@ open System.Windows.Forms
 open TensorFlow
 open System
 open System.IO
+open System.Windows.Forms
 
+if not System.Environment.Is64BitProcess then System.Environment.Exit(-1)
 
 let baseDir = Path.Combine(__SOURCE_DIRECTORY__, "bin", "Debug", "netstandard2.0")
 let weights_path = Path.Combine(baseDir, "resnet50_weights_tf_dim_ordering_tf_kernels.h5")
 let labels_path = Path.Combine(baseDir,"imagenet1000.txt")
-
 let example_dir = Path.Combine(__SOURCE_DIRECTORY__, "..","..","examples")
-
 let label_map = File.ReadAllLines(labels_path)
 
 let sess = new TFSession()
-
 // NOTE: Graph.ToString() returns the whole protobuf as txt to console
+// NOTE: fsi does not type check in Ionide. This can be ignored.
 fsi.AddPrinter(fun (x:TFGraph) -> sprintf "TFGraph %i" (int64 x.Handle))
 
 let graph = sess.Graph
@@ -29,7 +29,7 @@ let (input,output) = Resnet50.Model.buildResnet(graph,weights_path)
 
 /// This is from TensorflowSharp (Examples/ExampleCommon/ImageUtil.cs)
 /// It's intended for inception but used here for resnet as an example
-/// of this type of functionalityt 
+/// of this type of functionality 
 let construtGraphToNormalizeImage(destinationDataType:TFDataType) =
     let W = 224
     let H = 224
@@ -43,7 +43,6 @@ let construtGraphToNormalizeImage(destinationDataType:TFDataType) =
     (input,graph.Cast(final_img,destinationDataType))
 
 let img_input,img_output = construtGraphToNormalizeImage(TFDataType.Float)
-
 
 let classifyFile(path:string) =
     let createTensorFromImageFile(file:string,destinationDataType:TFDataType) =

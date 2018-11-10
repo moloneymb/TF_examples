@@ -5,6 +5,7 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <DebugType>portable</DebugType>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="hdf5.fs" />
@@ -21,13 +22,13 @@
     <Content Include="..\..\packages\TensorFlowSharp\runtimes\win7-x64\native\libtensorflow.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\packages\HDF.PInvoke.NETStandard\runtimes\min-x64\native\hdf5_hl.dll">
+    <Content Include="..\..\packages\HDF.PInvoke.NETStandard\runtimes\win-x64\native\hdf5_hl.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\packages\HDF.PInvoke.NETStandard\runtimes\min-x64\native\hdf5.dll">
+    <Content Include="..\..\packages\HDF.PInvoke.NETStandard\runtimes\win-x64\native\hdf5.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\..\packages\HDF.PInvoke.NETStandard\runtimes\min-x64\native\zlib1.dll">
+    <Content Include="..\..\packages\HDF.PInvoke.NETStandard\runtimes\win-x64\native\zlib1.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
