@@ -90,7 +90,7 @@ module PretrainedFFStyleVGG =
 
         let conv_layer(num_filters:int64, filter_size:int64, strides:int64, is_relu:bool, name:string) (input:TFOutput) = 
             let weights_init = conv_init_vars(input, num_filters, filter_size,false,name)
-            let x = graph.Conv2D(input, weights_init, [|1L;strides;strides;1L|], padding="SAME")
+            let x = instance_norm(graph.Conv2D(input, weights_init, [|1L;strides;strides;1L|], padding="SAME"),true, name)
             if is_relu then graph.Relu(x) else x
 
         let residual_block(filter_size:int64, name:string) (input:TFOutput) = 
@@ -118,6 +118,7 @@ module PretrainedFFStyleVGG =
         |> conv_transpose_layer(32L,3L,2L,"conv_t2")
         |> conv_layer(32L,3L,1L,false,"conv_t3")
         |> fun conv_t3 -> graph.Add(graph.Mul(graph.Tanh(conv_t3), graph.Const(new TFTensor(150.f))), graph.Const(new TFTensor(255.f / 2.f)))
+        |> fun x -> graph.ClipByValue(x,graph.Const(new TFTensor(0.f)), graph.Const(new TFTensor(255.f)))
 (*
 module PretrainedVGG =
     let net(graph:TFGraph, weights:Map<string,TFTensor>, input_img:TFOutput) =

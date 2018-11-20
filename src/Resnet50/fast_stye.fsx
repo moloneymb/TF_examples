@@ -36,7 +36,16 @@ let xs = weights_map
 let input = graph.Placeholder(TFDataType.Float, TFShape(1L,474L,712L,3L),"input")
 let output = PretrainedFFStyleVGG.net(graph,xs,input)
 let input_string = graph.Placeholder(TFDataType.String)
-let img = graph.ExpandDims(input=graph.Cast(graph.DecodeJpeg(contents=input_string, channels=Nullable(3L)), TFDataType.Float), dim = graph.Const(TFTensor(0)))
+let mean_pixel = graph.Const(new TFTensor([|123.68; 116.778; 103.939|]))
+
+let img = 
+    let decoded = graph.Cast(graph.DecodeJpeg(contents=input_string, channels=Nullable(3L)), TFDataType.Float)
+    let preprocessed = graph.Sub(decoded,mean_pixel)
+    // NOTE: Resizing isn't doing
+    //let resized = graph.ResizeBicubic(preprocessed,graph.Const(new TFTensor([|256L;256L|])))
+    graph.ExpandDims(input=preprocessed, dim = graph.Const(new TFTensor(0)))
+
+
 let img_tf = TFTensor.CreateString(File.ReadAllBytes("/home/moloneymb/EE/Git/TF_examples/examples/chicago.jpg"))
 
 let img_tensor = sess.Run([|input_string|],[|img_tf|],[|img|]).[0]
@@ -44,7 +53,8 @@ let rain = sess.Run([|input|],[|img_tensor|],[|output|]).[0]
     
 let value = rain.GetValue()
 
-rain.Shape
+//rain.Shape
+
 
 //117.0f
 //(img_tensor.GetValue() :?> Array).GetValue(0L,0L,0L,0L)
@@ -86,7 +96,7 @@ File.WriteAllBytes("/home/moloneymb/EE/Git/fast-style-transfer/img.npy", npyOut)
 //graph.EncodeJpeg()
 
 //#r "netstandard"
-//#r "/home/moloneymb/EE/Git/fast-style-transfer/System.Buffers.dll"
+//#r "/home/moloneymb/EE/Gt/fast-style-transfer/System.Buffers.dll"
 //#r "/home/moloneymb/EE/Git/fast-style-transfer/System.Memory.dll"
 //#r "/home/moloneymb/EE/Git/fast-style-transfer/System.Runtime.CompilerServices.Unsafe.dll"
 //#r "/home/moloneymb/EE/Git/fast-style-transfer/SixLabors.Core.dll"
