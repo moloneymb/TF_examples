@@ -1,14 +1,14 @@
 # Tensorflow Examples in F#
 
 List of examples
-* Resnet50 for image classification
+* Resnet50ImageClassification
+* Fast Neural Style
 
-## Resnet50
 Steps to run:
 * Make sure FSI is 64bit and does not shadow assemblies<sup>1</sup>
 * Packet Install
-* Build ./src/Resnet50/Resnet50.fsproj
-* Run script ./src/Resnet50/script.fsx in F# interactive
+* Build ./src/TFExamples/TFExamples.fsproj
+* Run script ./src/TFExamples/(example name).fsx in F# interactive
 
 
 ### 1: Making sure FSI is 64bit and does not shadow
