@@ -1,8 +1,28 @@
-module VGG
-open TensorFlow
-open System
+// TODO: Image input needs pre-processing, output needs post processing
+// TODO: Find a way to view images!
 
-// TODO make sure TFGraph.Variable uses VariableV2, this is not needed at this stage as we sub in a TFOutput instead of a trainable Variable
+// NOTE: System.Drawing.Common is not cross platform
+// NOTE: SixLabors.ImageSharp has issues with system dependencies, possibly as I'm using a .netcore version of it. Perhaps a mono version would be better.
+// NOTE: For now let's simply create an array save to numpy and check the image in numpy
+
+//#r "FSI.exe"
+#I "bin/Debug/netstandard2.0"
+#r "netstandard"
+#r "TensorFlowSharp.dll"
+#load "NPYReaderWriter.fsx"
+
+open NPYReaderWriter
+open System
+open System.IO
+open TensorFlow
+
+if not System.Environment.Is64BitProcess then System.Environment.Exit(-1)
+
+fsi.AddPrinter(fun (x:TFGraph) -> sprintf "TFGraph %i" (int64 x.Handle))
+
+let pretrained_dir = Path.Combine(__SOURCE_DIRECTORY__,"..","..","pretrained")
+let weights_path = Path.Combine(pretrained_dir, "fast_style_weights_rain.npz")
+let example_dir = Path.Combine(__SOURCE_DIRECTORY__, "..","..","examples")
 
 type TFGraph with
     member this.Conv2DTranspose(value,filter, output_shape:TFShape, strides, ?padding:string, ?data_format:string,?operName:string) = 
@@ -32,7 +52,7 @@ type TFGraph with
             strides = strides,
             padding = paddingV,
             data_format = data_formatV//,
-            //?operName = operName // The name pass through does not seem to be working for some reason
+            //?operName = operName // The name pass through does not seem to be working here for some reason
         )
 
     /// https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/python/ops/nn_impl.py
@@ -119,44 +139,47 @@ module PretrainedFFStyleVGG =
         |> conv_layer(32L,3L,1L,false,"conv_t3")
         |> fun conv_t3 -> graph.Add(graph.Mul(graph.Tanh(conv_t3), graph.Const(new TFTensor(150.f))), graph.Const(new TFTensor(255.f / 2.f)))
         |> fun x -> graph.ClipByValue(x,graph.Const(new TFTensor(0.f)), graph.Const(new TFTensor(255.f)))
-(*
-module PretrainedVGG =
-    let net(graph:TFGraph, weights:Map<string,TFTensor>, input_img:TFOutput) =
-
-        let layers = [|
-            "conv1_1"; "relu1_1"; "conv1_2"; "relu1_2"; "pool1";
-            "conv2_1"; "relu2_1"; "conv2_2"; "relu2_2"; "pool2";
-
-            "conv3_1"; "relu3_1"; "conv3_2"; "relu3_2"; "conv3_3"; 
-            "relu3_3"; "conv3_4"; "relu3_4"; "pool3"
-
-            "conv4_1"; "relu4_1"; "conv4_2"; "relu4_2"; "conv4_3"; 
-            "relu4_3"; "conv4_4"; "relu4_4"; "pool4"
-
-            "conv5_1"; "relu5_1"; "conv5_2"; "relu5_2"; "conv5_3"; 
-            "relu5_3"; "conv5_4"; "relu5_4"; 
-        |]
-
-        let mean_pixel = graph.Const(new TFTensor([|123.68; 116.779; 103.939|]))
-        let weights = failwith "TODO"
-
-        let input_img = graph.Sub(input_img,mean_pixel)
-
-        let output = 
-            (input_img,layers) ||> Array.foldi (fun input (i,name) ->
-                let kind = name.[..4]
-                match kind with
-                | "conv" -> 
-                    let kernels, bias = failwith "todo"//weights.[i].[0].[0].[0].[0]
-                    let kernels = failwith "todo" // graph.Transpose(kernels, [1L;0L;2L;3L])
-                    let bias = graph.Reshape(bias,graph.Const(TFShape(-1L).AsTensor()))
-                    graph.Conv2D(input,kernels,[|1L;1L;1L;1L|],"SAME")
-                | "relu" -> graph.Relu(input)
-                | "pool" -> graph.MaxPool(input, ksize=[|1L;2L;2L;1L|], strides=[|1L;2L;2L;1L|], padding="SAME")
-                | _ -> failwith "layer name prefix not found"
-            ) 
-
-        graph.Add(output,mean_pixel)
-*)
 
 
+
+let sess = new TFSession()
+let graph = sess.Graph
+
+let weights_map = 
+            readFromNPZ((File.ReadAllBytes(weights_path)))
+            |> Map.toArray 
+            |> Array.map (fun (k,(metadata, arr)) -> 
+                k.Substring(0, k.Length-4), graph.Reshape(graph.Const(new TFTensor(arr)), graph.Const(TFShape(metadata.shape |> Array.map int64).AsTensor()))) 
+            |> Map.ofArray
+
+let input = graph.Placeholder(TFDataType.Float, TFShape(1L,474L,712L,3L),"input")
+
+let output = PretrainedFFStyleVGG.net(graph,weights_map,input)
+let input_string = graph.Placeholder(TFDataType.String)
+let mean_pixel = graph.Const(new TFTensor([|123.68f; 116.778f; 103.939f|]))
+
+let img = 
+    let decoded = graph.Cast(graph.DecodeJpeg(contents=input_string, channels=Nullable(3L)), TFDataType.Float)
+    let preprocessed = graph.Sub(decoded,mean_pixel)
+    // NOTE: Resizing isn't causing the issues
+    //let resized = graph.ResizeBicubic(preprocessed,graph.Const(new TFTensor([|256L;256L|])))
+    graph.ExpandDims(input=preprocessed, dim = graph.Const(new TFTensor(0)))
+
+
+let img_tf = TFTensor.CreateString(File.ReadAllBytes(Path.Combine(example_dir,"chicago.jpg"))) 
+
+let img_tensor = sess.Run([|input_string|],[|img_tf|],[|img|]).[0]
+let rain = sess.Run([|input|],[|img_tensor|],[|output|]).[0]
+
+// Flatten and save to numpy
+let flatten = 
+    [|
+        let res_arr = rain.GetValue() :?> Array
+        for w in 0..476-1 do
+            for h in 0..712-1 do
+                for c in 0..3-1 do    
+                    yield res_arr.GetValue(0L, int64 w, int64 h, int64 c) :?> float32
+    |]
+
+File.WriteAllBytes(Path.Combine(__SOURCE_DIRECTORY__, "chicago_in_rain_style.npy"), NPYReaderWriter.writeArrayToNumpy(flatten,rain.Shape |> Array.map int32))
+    

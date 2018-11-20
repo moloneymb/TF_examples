@@ -1,10 +1,13 @@
-module NpyFormat
+module NPYReaderWriter
+
+#r "System.IO.Compression"
+open System
+open System.IO
+open System.IO.Compression
 
 // WARN: This does not support nested record arrays and object arrays. For now this is by design.
 // TODO: Support Strings
 
-open System
-open System.IO
 
 module Result =
     let requireOk (result:Result<'a,string>) = 
@@ -114,7 +117,6 @@ type NPYDescription =
 
 let readNumpy(bytes:byte[]) : Result<(NPYDescription*Array),string> =
     let parseHeader(header:string) =
-        printfn "%s" header
         let headerRecord = 
             header.Split('{','}') 
             |> Array.filter (String.IsNullOrWhiteSpace >> not)
@@ -245,8 +247,6 @@ let writeArrayToNumpy(arr:Array,shape:int[]) : byte[] =
     
 // npz reader and write is simply npy files save in a zip archive
 
-#r "System.IO.Compression"
-open System.IO.Compression
 
 (*
 // WARN: Untested
@@ -269,7 +269,6 @@ let readFromNPZ(data:byte[]) : Map<string,(NPYDescription*Array)> =
     use zip = new ZipArchive(ms, ZipArchiveMode.Read)
     [|
         for entry in zip.Entries ->
-            printfn "%s" entry.Name
             use targetMs = new MemoryStream()
             use entryStream = entry.Open()
             entryStream.CopyTo(targetMs)

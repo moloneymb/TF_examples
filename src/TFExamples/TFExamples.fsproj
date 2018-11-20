@@ -12,12 +12,6 @@
     <Compile Include="vgg.fs" />
     <Compile Include="model.fs" />
     <None Include="App.config" />
-    <Content Include="..\..\paket-files\github.com\resnet50_weights_tf_dim_ordering_tf_kernels.h5">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="imagenet1000.txt">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
