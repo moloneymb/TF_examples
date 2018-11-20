@@ -9,6 +9,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="hdf5.fs" />
+    <Compile Include="vgg.fs" />
     <Compile Include="model.fs" />
     <None Include="App.config" />
     <Content Include="..\..\paket-files\github.com\resnet50_weights_tf_dim_ordering_tf_kernels.h5">
@@ -17,6 +18,9 @@
     <Content Include="imagenet1000.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0005" />
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
     <Content Include="..\..\packages\TensorFlowSharp\runtimes\win7-x64\native\libtensorflow.dll">

@@ -4,7 +4,7 @@ open System
 open System.ComponentModel
 open System.Drawing
 open System.Windows.Forms
-
+#r "FSharp.Core"
 
 type BufferingExample() =
     inherit Form()

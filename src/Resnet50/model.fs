@@ -20,7 +20,7 @@ let buildResnet(graph:TFGraph,weights_path:string) =
             graph.WithScope(namePrime)
 
 
-    use h5 = HDF5.HDF5.OpenRead(weights_path) 
+    use h5 = HDF5.OpenRead(weights_path) 
     let getWeights(name:string) =
         let data, shape = h5.Read<float32>(name)
         graph.Reshape(graph.Const(new TFTensor(data)), graph.Const(TFShape(shape |> Array.ofList).AsTensor()))

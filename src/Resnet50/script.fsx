@@ -8,7 +8,6 @@
 open TensorFlow
 open System
 open System.IO
-open System.Windows.Forms
 
 if not System.Environment.Is64BitProcess then System.Environment.Exit(-1)
 

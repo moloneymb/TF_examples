@@ -1,4 +1,4 @@
-namespace HDF5
+namespace global 
 // Originally from https://github.com/DeepMLNet/DeepNet/blob/master/Tensor/Tensor/HDF5.fs
 // Apache 2.0 licence
 
@@ -11,9 +11,6 @@ open System.IO
 open System.Runtime.InteropServices
 open FSharp.Reflection
 open HDF.PInvoke 
-
-//open Tensor.Utils
- 
  
 /// HDF5 support functions
 module private HDF5Support =

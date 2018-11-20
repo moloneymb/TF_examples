@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
+    <UseNETCoreGenerator>true</UseNETCoreGenerator>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="Script1.fsx" />
+    <Compile Include="Avalonia.fs" />
+    <Compile Include="DrawingControl.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="0.7.0" />
+    <PackageReference Include="Avalonia.Desktop" Version="0.7.0" />
+  </ItemGroup>
+</Project>
