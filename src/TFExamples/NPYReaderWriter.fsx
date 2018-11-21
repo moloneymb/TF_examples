@@ -245,9 +245,6 @@ let writeArrayToNumpy(arr:Array,shape:int[]) : byte[] =
     Buffer.BlockCopy(arr,0,buffer,preambleLen + headerBytes.Length, size * dtype.ByteWidth)
     buffer
     
-// npz reader and write is simply npy files save in a zip archive
-
-
 (*
 // WARN: Untested
 let saveToNPZ(npys:Map<string,NPYDescription*Array>) =

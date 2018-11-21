@@ -1,8 +1,8 @@
 # Tensorflow Examples in F#
 
 List of examples
-* Resnet50ImageClassification
-* Fast Neural Style
+* Resnet50ImageClassification: classificy images to one of 1000 categories
+* NeuralStyleTransfer: transfer style of image to one of a number of pretrained styles
 
 Steps to run:
 * Make sure FSI is 64bit and does not shadow assemblies<sup>1</sup>
