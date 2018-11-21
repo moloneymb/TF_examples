@@ -156,6 +156,6 @@ let classifyFile(path:string) =
     let res = sess.Run(runOptions = null, inputs = [|input|], inputValues = [|example|], outputs = [|index|])
     label_map.[res.[0].GetValue() :?> int64[] |> Array.item 0 |> int]
 
-classifyFile(Path.Combine(example_dir,"example_0.jpeg"))
-classifyFile(Path.Combine(example_dir,"example_1.jpeg"))
-classifyFile(Path.Combine(example_dir,"example_2.jpeg"))
+printfn "example_0.jpeg is %s " (classifyFile(Path.Combine(example_dir,"example_0.jpeg")))
+printfn "example_1.jpeg is %s " (classifyFile(Path.Combine(example_dir,"example_1.jpeg")))
+printfn "example_2.jpeg is %s " (classifyFile(Path.Combine(example_dir,"example_2.jpeg")))
