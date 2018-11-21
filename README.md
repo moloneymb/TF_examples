@@ -1,14 +1,17 @@
 # Tensorflow Examples in F#
 
 List of examples
-* Resnet50ImageClassification: classificy images to one of 1000 categories
-* NeuralStyleTransfer: transfer style of image to one of a number of pretrained styles
+* ImageClassifier
+   * Uses Resnet50 to classifiy an image into one of 1000 categories
+* NeuralStyleTransfer
+   * Uses Fast Style Transfer to transfer image styles
+   * The pretrained weights are for style of Rain Princess by Lenoid Afremov
+   * Different weights can be loaded to apply different styles
 
-Steps to run:
+
+Setup
 * Make sure FSI is 64bit and does not shadow assemblies<sup>1</sup>
-* Packet Install
-* Build ./src/TFExamples/TFExamples.fsproj
-* Run script ./src/TFExamples/(example name).fsx in F# interactive
+* run script setup.fsx
 
 
 ### 1: Making sure FSI is 64bit and does not shadow
@@ -17,6 +20,8 @@ For Visual Studio Code:
 * On Windows: if FSI is defaulting to 32bit this will need to be changed to 64bit by setting the Ionide property for fsiFilePath to the full path to the fsiAnyCpu.exe.
 
 `"FSharp.fsiFilePath": "C:\..fsiAnyCpu.exe"`
+    
+    See Ionide issue [956](https://github.com/ionide/ionide-vscode-fsharp/issues/956)
 
 * On Mac: this is currently untested
 

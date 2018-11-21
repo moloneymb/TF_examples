@@ -2,6 +2,10 @@ git lfs track "*.npz"
 git lfs track "*.npy"
 git lfs track "*.h5"
 
+nuget
+lib
+pretrained
+
 # Created by https://www.gitignore.io/api/f#,linux,windows,macos,vim,emacs,visualstudio,visualstudiocode
 
 ### F# ###

@@ -1,8 +1,7 @@
 #r "netstandard"
-#I "bin/Debug/netstandard2.0"
-#r "HDF.PInvoke.dll"
-#r "TensorFlowSharp.dll"
-#r "Resnet50.dll"
+#r "lib/HDF.PInvoke.dll"
+#r "lib/TensorFlowSharp.dll"
+#load "shared/HDF5ReaderWriter.fsx"
 #nowarn "760"
 open TensorFlow
 open System
@@ -26,7 +25,7 @@ fsi.AddPrinter(fun (x:TFGraph) -> sprintf "TFGraph %i" (int64 x.Handle))
 
 let graph = sess.Graph
 
-let (input,output) = Resnet50.Model.buildResnet(graph,weights_path)
+
 
 let buildResnet(graph:TFGraph,weights_path:string) =
     // NOTE: This behaviour should be built into graph
@@ -146,6 +145,8 @@ let construtGraphToNormalizeImage(destinationDataType:TFDataType) =
     (input,graph.Cast(final_img,destinationDataType))
 
 let img_input,img_output = construtGraphToNormalizeImage(TFDataType.Float)
+
+let (input,output) = buildResnet(graph,weights_path)
 
 let classifyFile(path:string) =
     let createTensorFromImageFile(file:string,destinationDataType:TFDataType) =

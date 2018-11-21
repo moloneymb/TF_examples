@@ -1,11 +1,9 @@
-open TensorFlow
-//TODO enable arbitrary image size by improving on Conv2DTranspose
-
-#I "bin/Debug/netstandard2.0"
 #r "netstandard"
-#r "TensorFlowSharp.dll"
-#load "NPYReaderWriter.fsx"
-#load "BitmapWriter.fsx"
+#r "lib/TensorFlowSharp.dll"
+#load "shared/NPYReaderWriter.fsx"
+#load "shared/BitmapWriter.fsx"
+
+//TODO enable arbitrary image size by improving on Conv2DTranspose
 
 open NPYReaderWriter
 open System
