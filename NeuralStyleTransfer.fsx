@@ -14,9 +14,9 @@ if not System.Environment.Is64BitProcess then System.Environment.Exit(-1)
 
 fsi.AddPrinter(fun (x:TFGraph) -> sprintf "TFGraph %i" (int64 x.Handle))
 
-let pretrained_dir = Path.Combine(__SOURCE_DIRECTORY__,"..","..","pretrained")
+let pretrained_dir = Path.Combine(__SOURCE_DIRECTORY__,"pretrained")
 let weights_path = Path.Combine(pretrained_dir, "fast_style_weights_rain.npz")
-let example_dir = Path.Combine(__SOURCE_DIRECTORY__, "..","..","examples")
+let example_dir = Path.Combine(__SOURCE_DIRECTORY__,"examples")
 
 type TFGraph with
     member this.Conv2DTranspose(value,filter, output_shape:int64[], strides:int64[], ?padding:string, ?data_format:string,?operName:string) = 

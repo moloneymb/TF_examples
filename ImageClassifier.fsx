@@ -10,11 +10,10 @@ open System.Collections.Generic
 
 if not System.Environment.Is64BitProcess then System.Environment.Exit(-1)
 
-let pretrained_dir = Path.Combine(__SOURCE_DIRECTORY__,"..","..","pretrained")
-let paket_files_dir = Path.Combine(__SOURCE_DIRECTORY__,"..","..","paket-files")
-let weights_path = Path.Combine(paket_files_dir, "github.com","resnet50_weights_tf_dim_ordering_tf_kernels.h5")
+let pretrained_dir = Path.Combine(__SOURCE_DIRECTORY__,"pretrained")
+let weights_path = Path.Combine(pretrained_dir, "resnet50_weights_tf_dim_ordering_tf_kernels.h5")
 let labels_path = Path.Combine(pretrained_dir,"imagenet1000.txt")
-let example_dir = Path.Combine(__SOURCE_DIRECTORY__, "..","..","examples")
+let example_dir = Path.Combine(__SOURCE_DIRECTORY__,"examples")
 let label_map = File.ReadAllLines(labels_path)
 
 

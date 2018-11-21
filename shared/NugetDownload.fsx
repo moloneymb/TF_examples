@@ -45,10 +45,11 @@ let downloadAndExtractNugetFiles(nugetFiles:(string*string[])[]) =
         let zipEntryNameMap = zip.Entries |> Seq.mapi (fun i e -> (e.FullName,i)) |> Map.ofSeq
         for file in files do
             let targetFullFileName = Path.Combine(libPath,Path.GetFileName(file))
-            match zipEntryNameMap.TryFind(file) with
-            | None -> failwithf "file %s not found in nuget archive %s" file nugetFileName
-            | Some(i) -> 
-                let entry = zip.Entries.[i]
-                use entryStream = entry.Open()
-                use entryFileStream = new FileStream(targetFullFileName,FileMode.CreateNew)
-                entryStream.CopyTo(entryFileStream)
+            if not (File.Exists(targetFullFileName)) then
+                match zipEntryNameMap.TryFind(file) with
+                | None -> failwithf "file %s not found in nuget archive %s" file nugetFileName
+                | Some(i) -> 
+                    let entry = zip.Entries.[i]
+                    use entryStream = entry.Open()
+                    use entryFileStream = new FileStream(targetFullFileName,FileMode.CreateNew)
+                    entryStream.CopyTo(entryFileStream)
