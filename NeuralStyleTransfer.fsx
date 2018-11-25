@@ -19,7 +19,7 @@ open TensorFlow
 if not System.Environment.Is64BitProcess then System.Environment.Exit(-1)
 
 type Argument =
-    | [<Mandatory>] [<AltCommandLine([|"-s"|])>] Style of string
+    | [<AltCommandLine([|"-s"|])>] Style of string
     with
         interface IArgParserTemplate with
             member this.Usage =

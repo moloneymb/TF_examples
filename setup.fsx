@@ -29,7 +29,7 @@ downloadAndExtractNugetFiles nugetFiles
 /// Download Pretrained Weights
 [| 
   //yield "empty_checkpoint.zip"; // This is for AttGAN which is not ready yet
-  yield! ["rain"; "starry_night"; "wave"] |> Seq.map ((+) "fast_style_weights_")
+  yield! ["rain"; "starry_night"; "wave"] |> Seq.map (sprintf "fast_style_weights_%s.npz")
   yield "imagenet1000.txt"
   yield "resnet_classifier_1000.npz"
 |]
