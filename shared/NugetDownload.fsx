@@ -1,8 +1,6 @@
-open System.IO.Compression
-open System.IO
-open System.IO.Compression
 #r "System.IO.Compression"
-
+#r "System.Runtime.InteropServices.RuntimeInformation"
+#r "netstandard"
 open System
 open System.IO.Compression
 open System.IO
@@ -12,11 +10,19 @@ open System.Runtime.InteropServices
 
 type OS = | Windows  | Linux | OSX
 
+(*
 let os = 
     if RuntimeInformation.IsOSPlatform(OSPlatform.Linux) then Linux 
     elif RuntimeInformation.IsOSPlatform(OSPlatform.Windows) then Windows
     elif RuntimeInformation.IsOSPlatform(OSPlatform.OSX) then OSX
     else failwithf "Unsupported OS %s" RuntimeInformation.OSDescription
+*)
+
+let os = 
+    let platformId = System.Environment.OSVersion.Platform
+    if platformId = PlatformID.MacOSX then OSX
+    elif platformId = PlatformID.Unix then Linux
+    else Windows
 
 let libPath = Path.Combine(__SOURCE_DIRECTORY__,"..","lib")
 let nugetPath = Path.Combine(__SOURCE_DIRECTORY__,"..","nuget")
