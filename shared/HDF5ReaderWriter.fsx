@@ -5,6 +5,11 @@ namespace global
 // NOTE: invalidOpf may be useful to get rid of the need of the backpipe and sprintf
 // NOTE: perhaps re-introduce record support
 
+// WARN: There appears to be issues running on Ubuntu 18.04
+//       It is recommended to avoid H5 where possible
+
+#r "netstandard"
+#r "../lib/HDF.PInvoke.dll"
 
 open System
 open System.IO

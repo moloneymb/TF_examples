@@ -1,21 +1,20 @@
 #r "netstandard"
-#r "lib/HDF.PInvoke.dll"
 #r "lib/TensorFlowSharp.dll"
-#load "shared/HDF5ReaderWriter.fsx"
+#load "shared/NPYReaderWriter.fsx"
 #nowarn "760"
 open TensorFlow
 open System
 open System.IO
 open System.Collections.Generic
+open NPYReaderWriter
 
 if not System.Environment.Is64BitProcess then System.Environment.Exit(-1)
 
 let pretrained_dir = Path.Combine(__SOURCE_DIRECTORY__,"pretrained")
-let weights_path = Path.Combine(pretrained_dir, "resnet50_weights_tf_dim_ordering_tf_kernels.h5")
+let weights_path = Path.Combine(pretrained_dir, "resnet_classifier_1000.npz")
 let labels_path = Path.Combine(pretrained_dir,"imagenet1000.txt")
 let example_dir = Path.Combine(__SOURCE_DIRECTORY__,"examples")
 let label_map = File.ReadAllLines(labels_path)
-
 
 let sess = new TFSession()
 // NOTE: Graph.ToString() returns the whole protobuf as txt to console
@@ -40,10 +39,15 @@ let buildResnet(graph:TFGraph,weights_path:string) =
             graph.WithScope(namePrime)
 
 
-    use h5 = HDF5.OpenRead(weights_path) 
+    let weights_map = 
+        readFromNPZ((File.ReadAllBytes(weights_path)))
+        |> Map.map (fun k (metadata,arr) ->
+            graph.Reshape(graph.Const(new TFTensor(arr)), graph.Const(TFShape(metadata.shape |> Array.map int64).AsTensor()))) 
+
     let getWeights(name:string) =
-        let data, shape = h5.Read<float32>(name)
-        graph.Reshape(graph.Const(new TFTensor(data)), graph.Const(TFShape(shape |> Array.ofList).AsTensor()))
+        weights_map.[name + ".npy"]
+        //let data, shape = h5.Read<float32>(name)
+        //graph.Reshape(graph.Const(new TFTensor(data)), graph.Const(TFShape(shape |> Array.ofList).AsTensor()))
 
     let get_conv_tensor(conv_name:string) = getWeights(sprintf "%s/%s_W:0" conv_name conv_name)
 
@@ -156,6 +160,6 @@ let classifyFile(path:string) =
     let res = sess.Run(runOptions = null, inputs = [|input|], inputValues = [|example|], outputs = [|index|])
     label_map.[res.[0].GetValue() :?> int64[] |> Array.item 0 |> int]
 
-classifyFile(Path.Combine(example_dir,"example_0.jpeg"))
-classifyFile(Path.Combine(example_dir,"example_1.jpeg"))
-classifyFile(Path.Combine(example_dir,"example_2.jpeg"))
+printfn "%s" (classifyFile(Path.Combine(example_dir,"example_0.jpeg")))
+printfn "%s" (classifyFile(Path.Combine(example_dir,"example_1.jpeg")))
+printfn "%s" (classifyFile(Path.Combine(example_dir,"example_2.jpeg")))

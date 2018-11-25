@@ -1,10 +1,16 @@
 #r "netstandard"
+#r "lib/Argu.dll"
 #r "lib/TensorFlowSharp.dll"
+#load "shared/NNImpl.fsx"
+#load "shared/NNOps.fsx"
 #load "shared/NPYReaderWriter.fsx"
-#load "shared/BitmapWriter.fsx"
+#load "shared/ImageWriter.fsx"
+
 
 //TODO enable arbitrary image size by improving on Conv2DTranspose
 
+
+open Argu
 open NPYReaderWriter
 open System
 open System.IO
@@ -12,62 +18,22 @@ open TensorFlow
 
 if not System.Environment.Is64BitProcess then System.Environment.Exit(-1)
 
+type Argument =
+    | [<Mandatory>] [<AltCommandLine([|"-s"|])>] Style of string
+    with
+        interface IArgParserTemplate with
+            member this.Usage =
+                match this with
+                |  Style _ -> "Specify a style of painting to use."
+
+// TODO remove normal FSI arguments fsi.CommandLineArgs
+let style = ArgumentParser<Argument>().Parse(fsi.CommandLineArgs.[1..]).GetResult(<@ Argument.Style @>, defaultValue = "rain")
+
 fsi.AddPrinter(fun (x:TFGraph) -> sprintf "TFGraph %i" (int64 x.Handle))
 
 let pretrained_dir = Path.Combine(__SOURCE_DIRECTORY__,"pretrained")
-let weights_path = Path.Combine(pretrained_dir, "fast_style_weights_rain.npz")
+
 let example_dir = Path.Combine(__SOURCE_DIRECTORY__,"examples")
-
-type TFGraph with
-    member this.Conv2DTranspose(value,filter, output_shape:int64[], strides:int64[], ?padding:string, ?data_format:string,?operName:string) = 
-        let paddingV     = defaultArg padding "SAME"
-        let data_formatV = defaultArg data_format "NHWC"
-        use name = this.WithScope("conv2d_transpose") // NOTE: this needs control parameters
-        if not (data_formatV = "NCHW" || data_formatV = "NHWC") then 
-            failwith "dataformat has to be either NCHW or NHWC."
-        let axis = if data_formatV = "NHWC" then 3 else 1
-        let value_shape = this.GetShape(value)
-        let filter_shape = this.GetShape(filter)
-        if output_shape.Length <> 4 then
-            failwithf "output_shape must have shape (4,) got %A" output_shape
-        if value_shape.[axis] <> filter_shape.[3] then
-            failwithf "input channels does not match filter's input channels, \n %i != %i" 
-                value_shape.[axis]
-                filter_shape.[3]
-        if output_shape.[3] <> filter_shape.[2] then
-            failwithf "output_shape does does not match filter's output channels, \n %i != %i" 
-                value_shape.[axis]
-                filter_shape.[3]
-        if paddingV <> "VALID" && paddingV <> "SAME" then
-            failwithf "padding must be either VALID or SAME: %s" paddingV
-
-        this.Conv2DBackpropInput(
-            input_sizes = this.Const(TFShape(output_shape).AsTensor()),
-            filter = filter,
-            out_backprop = value,
-            strides = strides,
-            padding = paddingV,
-            data_format = data_formatV//,
-            //?operName = operName // The name pass through does not seem to be working here for some reason
-        )
-
-    /// https://github.com/tensorflow/tensorflow/blob/r1.12/tensorflow/python/ops/nn_impl.py
-    member this.Moments(x:TFOutput, ?axes:TFOutput, ?shift, ?name, ?keep_dims) =
-        let keep_dimsV = defaultArg keep_dims false
-        use name = this.WithScope("moments") // NOTE: this needs control parameters
-
-        let y = if x.OutputType = TFDataType.Half then this.Cast(x,TFDataType.Float) else x
-        let mean = this.ReduceMean(y, axes |> Option.toNullable, keep_dims=Nullable(true), operName ="mean")
-        let variance = this.ReduceMean(
-                         this.SquaredDifference(y, this.StopGradient(mean)), 
-                         axes |> Option.toNullable,
-                         keep_dims=Nullable(true),
-                         operName="variance")
-
-        let maybeSqueezeAndCast (y:TFOutput) = 
-            let y = if keep_dimsV then y else this.Squeeze(y)
-            if x.OutputType = TFDataType.Half then this.Cast(y,TFDataType.Half) else y
-        (mean |> maybeSqueezeAndCast, variance |> maybeSqueezeAndCast)
 
 module Array =
     let enumerate (xs:'a[]) = xs |> Array.mapi (fun i x -> (i,x))
@@ -140,6 +106,8 @@ module PretrainedFFStyleVGG =
 let sess = new TFSession()
 let graph = sess.Graph
 
+let weights_path = Path.Combine(pretrained_dir, sprintf "fast_style_weights_%s.npz" style)
+
 let weights_map = 
             readFromNPZ((File.ReadAllBytes(weights_path)))
             |> Map.toArray 
@@ -166,10 +134,10 @@ let img =
 let img_tf = TFTensor.CreateString(File.ReadAllBytes(Path.Combine(example_dir,"chicago.jpg"))) 
 
 let img_tensor = sess.Run([|input_string|],[|img_tf|],[|img|]).[0]
-let rain = sess.Run([|input|],[|img_tensor|],[|output|]).[0]
+let img_styled = sess.Run([|input|],[|img_tensor|],[|output|]).[0]
 
 // NOTE: Assumed NHWC dataformat
-let tensorToBmp(batchIndex:int) (imgs:TFTensor) =
+let tensorToPNG(batchIndex:int) (imgs:TFTensor) =
     if imgs.TensorType <> TFDataType.Float then failwith "type unsupported"
     match imgs.Shape |> Array.map int with
     | [|N;H;W;C|] ->
@@ -178,11 +146,11 @@ let tensorToBmp(batchIndex:int) (imgs:TFTensor) =
                 let res_arr = imgs.GetValue() :?> Array
                 for h in 0..H-1 do
                     for w in 0..W-1 do
-                        let getV(c) = byte <| Math.Min(255.f, Math.Max(0.f, (res_arr.GetValue(int64 batchIndex, int64 ((H-1)-h), int64 w, int64 c) :?> float32)))
-                        yield BitConverter.ToInt32([|getV(2); getV(1); getV(0); 255uy|], 0) // NOTE: Channels are commonly in RGB format
+                        let getV(c) = byte <| Math.Min(255.f, Math.Max(0.f, (res_arr.GetValue(int64 batchIndex, int64 h, int64 w, int64 c) :?> float32)))
+                        yield BitConverter.ToInt32([|getV(0); getV(1); getV(2); 255uy|], 0) // NOTE: Channels are commonly in RGB format
             |]
-        BitmapWriter.BGRAToBitmap(H,W,pixels)
+        ImageWriter.RGBAToPNG(H,W,pixels)
     | _ -> failwithf "shape %A is unsupported" imgs.Shape
 
 
-File.WriteAllBytes(Path.Combine(__SOURCE_DIRECTORY__, "chicago_in_rain_style.bmp"), tensorToBmp 0 rain)
+File.WriteAllBytes(Path.Combine(__SOURCE_DIRECTORY__, sprintf "chicago_in_%s_style.png" style), tensorToPNG 0 img_styled)

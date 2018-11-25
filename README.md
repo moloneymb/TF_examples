@@ -7,11 +7,17 @@ List of examples
    * Uses Fast Style Transfer to transfer image styles
    * The pretrained weights are for style of Rain Princess by Lenoid Afremov
    * Different weights can be loaded to apply different styles
+* AttGAN
+   * Using a GAN to visually change the attributs of faces
+   * This is a work in progress
 
 
 Setup
 * Make sure FSI is 64bit and does not shadow assemblies<sup>1</sup>
 * run script setup.fsx
+
+Run
+* Scripts can be run by either "Send to FSI" or by FSI. For example `FSI.exe NeuralStyleTransfer.fsx --style wave`
 
 
 ### 1: Making sure FSI is 64bit and does not shadow
