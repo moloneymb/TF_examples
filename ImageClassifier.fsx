@@ -22,7 +22,14 @@ let sess = new TFSession()
 fsi.AddPrinter(fun (x:TFGraph) -> sprintf "TFGraph %i" (int64 x.Handle))
 
 let graph = sess.Graph
-
+let relu x = graph.Relu(x)
+let add y x = graph.Add(x,y)
+let matMul y x = graph.MatMul(x,y) 
+let dense(W,b) x = x |> matMul W |> add b
+let softmax x = graph.Softmax(x)
+let maxPool(ksizes:int*int*int*int,strides:int*int*int*int,padding:string,dataFormat:string) x = 
+    let f(a,b,c,d) = [|a;b;c;d|] |> Array.map int64
+    graph.MaxPool(x,f(ksizes),f(strides),padding=padding,data_format=dataFormat)
 
 
 let buildResnet(graph:TFGraph,weights_path:string) =
@@ -51,7 +58,7 @@ let buildResnet(graph:TFGraph,weights_path:string) =
 
     let get_conv_tensor(conv_name:string) = getWeights(sprintf "%s/%s_W:0" conv_name conv_name)
 
-    let make_batch_norm(bn_name:string) bnx = 
+    let batch_norm(bn_name:string) bnx = 
         use ns = withScope("batchnorm")
         let getT(nm) = getWeights(sprintf "%s/%s_%s:0" bn_name bn_name nm)
         let moving_variance = getT("running_std")
@@ -85,18 +92,18 @@ let buildResnet(graph:TFGraph,weights_path:string) =
         let right = 
             input_tensor
             |> conv("2a",is_strided)
-            |> make_batch_norm(bn_name_base + "2a")
-            |> graph.Relu
-            |> conv("2b",false) // This is the only 3x3 conv
-            |> make_batch_norm(bn_name_base + "2b")
-            |> graph.Relu
+            |> batch_norm(bn_name_base + "2a")
+            |> relu
+            |> conv("2b",false)
+            |> batch_norm(bn_name_base + "2b")
+            |> relu
             |> conv("2c",false)
-            |> make_batch_norm(bn_name_base + "2c")
+            |> batch_norm(bn_name_base + "2c")
         let left = 
             if conv_shortcut then 
-                input_tensor |> conv("1",is_strided) |> make_batch_norm(bn_name_base + "1")
+                input_tensor |> conv("1",is_strided) |> batch_norm(bn_name_base + "1")
             else input_tensor
-        graph.Add(right,left) |> graph.Relu
+        (right,left) ||> add |> relu
         
     let input_placeholder = 
         graph.Placeholder(TFDataType.Float, 
@@ -106,30 +113,40 @@ let buildResnet(graph:TFGraph,weights_path:string) =
     /// TODO make this simpler with helper functions
     let paddings = graph.Reshape(graph.Const(new TFTensor([|0;0;3;3;3;3;0;0|])), graph.Const(TFShape(4L,2L).AsTensor()))
     let padded_input = graph.Pad(input_placeholder,paddings, "CONSTANT")
+
     let build_stage(stage:int,blocks:string) (x:TFOutput) =
         blocks.ToCharArray() 
         |> Array.fold (fun x c -> res_block(stage,c,c='a' && stage<>2,c='a')(x)) x
-    let toAxis (xs:int list) : Nullable<TFOutput> = 
-        Nullable(graph.Const(new TFTensor(xs |> Array.ofList),TFDataType.Int32))
-    let softmax = 
-        graph.Conv2D(padded_input, 
+
+    let toAxis (xs:int[]) : Nullable<TFOutput> = 
+        Nullable(graph.Const(new TFTensor(xs),TFDataType.Int32))
+    let reduceMean(axis:int list) (x:TFOutput) = graph.ReduceMean(x,axis  |> Array.ofList |> toAxis)
+    //let matMul x y = graph.MatMul(x,y)
+    let finalWeights = getWeights("fc1000/fc1000_W:0")
+    let finalBias = getWeights("fc1000/fc1000_b:0")
+    let initial_conv x = 
+        graph.Conv2D(x, 
                      get_conv_tensor("conv1"),
                      [|1L;2L;2L;1L|],
                      padding="VALID",
                      data_format="NHWC",
                      operName="conv1")
-        |> make_batch_norm("bn_conv1") 
-        |> graph.Relu
-        |> fun x -> graph.MaxPool(x,[|1L;3L;3L;1L|],[|1L;2L;2L;1L|],padding="SAME",data_format="NHWC")
+
+    let output = 
+        padded_input
+        |> initial_conv
+        |> batch_norm("bn_conv1") 
+        |> relu
+        |> maxPool((1,3,3,1),(1,2,2,1),"SAME","NCHW")
         |> build_stage(2,"abc")
         |> build_stage(3,"abcd")
         |> build_stage(4,"abcdef")
         |> build_stage(5,"abc")
-        |> fun x -> graph.ReduceMean(x,axis=([1;2] |> toAxis)) 
-        |> fun x -> graph.MatMul(x,getWeights("fc1000/fc1000_W:0"))
-        |> fun x -> graph.Add(x, getWeights("fc1000/fc1000_b:0"))
-        |> fun x -> graph.Softmax(x)
-    (input_placeholder,softmax)
+        |> reduceMean([1;2])
+        |> dense(finalWeights,finalBias)
+        |> softmax
+
+    (input_placeholder,output)
 
 
 /// This is from TensorflowSharp (Examples/ExampleCommon/ImageUtil.cs)

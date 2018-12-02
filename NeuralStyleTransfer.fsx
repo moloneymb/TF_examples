@@ -26,7 +26,6 @@ type Argument =
                 match this with
                 |  Style _ -> "Specify a style of painting to use."
 
-// TODO remove normal FSI arguments fsi.CommandLineArgs
 let style = ArgumentParser<Argument>().Parse(fsi.CommandLineArgs.[1..]).GetResult(<@ Argument.Style @>, defaultValue = "rain")
 
 fsi.AddPrinter(fun (x:TFGraph) -> sprintf "TFGraph %i" (int64 x.Handle))
@@ -87,6 +86,15 @@ module PretrainedFFStyleVGG =
                 graph.Relu(instance_norm(graph.Conv2DTranspose(input, weights_init, new_shape, [|1L;strides;strides;1L|], padding="SAME"), true, name))
             | _ -> failwith "shape size is incorrect"
 
+        let (+) x (y:float32) = graph.Add(x,graph.Const(new TFTensor(y)))
+        let (*) x (y:float32) = graph.Mul(x,graph.Const(new TFTensor(y)))
+
+        let tanh x = graph.Tanh(x)
+        let clip_by_value(low:float32,hight:float32) x = 
+            graph.ClipByValue(x,graph.Const(new TFTensor(low)), graph.Const(new TFTensor(hight)))
+
+        let to_pixel_value x = (tanh(x) * 150.f) + (255.f/2.f)
+
         input_img
         |> conv_layer(32L,9L,1L,true,"conv1")
         |> conv_layer(64L,3L,2L,true,"conv2")
@@ -99,8 +107,8 @@ module PretrainedFFStyleVGG =
         |> conv_transpose_layer(64L,3L,2L,"conv_t1")
         |> conv_transpose_layer(32L,3L,2L,"conv_t2")
         |> conv_layer(3L,9L,1L,false,"conv_t3")
-        |> fun conv_t3 -> graph.Add(graph.Mul(graph.Tanh(conv_t3), graph.Const(new TFTensor(150.f))), graph.Const(new TFTensor(255.f / 2.f)))
-        |> fun x -> graph.ClipByValue(x,graph.Const(new TFTensor(0.f)), graph.Const(new TFTensor(255.f)))
+        |> to_pixel_value
+        |> clip_by_value(0.f,255.f)
 
 
 let sess = new TFSession()
